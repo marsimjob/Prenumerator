@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export interface SavedGroup {
   groupId: string
@@ -11,27 +11,40 @@ function storageKey(userId: string) {
 }
 
 export function useSavedGroups(userId: string | undefined) {
-  const [groups, setGroups] = useState<SavedGroup[]>(() => {
-    if (!userId) return []
+  const [groups, setGroups] = useState<SavedGroup[]>([])
+
+  // Re-read from localStorage whenever the signed-in user changes
+  useEffect(() => {
+    if (!userId) { setGroups([]); return }
     try {
       const raw = localStorage.getItem(storageKey(userId))
-      return raw ? (JSON.parse(raw) as SavedGroup[]) : []
+      setGroups(raw ? (JSON.parse(raw) as SavedGroup[]) : [])
     } catch {
-      return []
+      setGroups([])
     }
-  })
+  }, [userId])
 
   function saveGroup(group: SavedGroup) {
     if (!userId) return
     setGroups(prev => {
-      const updated = [
-        group,
-        ...prev.filter(g => g.groupId !== group.groupId),
-      ]
+      const updated = [group, ...prev.filter(g => g.groupId !== group.groupId)]
       localStorage.setItem(storageKey(userId), JSON.stringify(updated))
       return updated
     })
   }
 
-  return { groups, saveGroup }
+  /** Bulk-seed from server data, merging with any existing local entries. */
+  function seedGroups(incoming: SavedGroup[]) {
+    if (!userId) return
+    setGroups(prev => {
+      const merged = [
+        ...incoming,
+        ...prev.filter(p => !incoming.some(i => i.groupId === p.groupId)),
+      ]
+      localStorage.setItem(storageKey(userId), JSON.stringify(merged))
+      return merged
+    })
+  }
+
+  return { groups, saveGroup, seedGroups }
 }

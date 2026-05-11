@@ -27,6 +27,6 @@ public class RegisterHandler(IUserRepository repo, IUnitOfWork uow, IPasswordHas
         await repo.AddAsync(user, ct);
         await uow.SaveChangesAsync(ct);
 
-        return new AuthResultDto(user.Id, user.Username, user.DisplayName, user.AvatarColor);
+        return new AuthResultDto(user.Id, user.Username, user.DisplayName, user.AvatarColor, []);
     }
 }

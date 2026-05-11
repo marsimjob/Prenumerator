@@ -8,7 +8,7 @@ import type { ApiError } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useAccount } from '@/hooks/useAccount'
-import { useSavedGroups } from '@/hooks/useSavedGroups'
+import { useSavedGroups, type SavedGroup } from '@/hooks/useSavedGroups'
 
 const AVATAR_COLORS = [
   '#6366f1', '#ec4899', '#f59e0b', '#10b981',
@@ -44,7 +44,7 @@ type GroupMode = 'create' | 'join'
 export default function Landing() {
   const navigate  = useNavigate()
   const { account, saveAccount, clearAccount } = useAccount()
-  const { groups, saveGroup } = useSavedGroups(account?.userId)
+  const { groups, saveGroup, seedGroups } = useSavedGroups(account?.userId)
 
   // Auth step
   const [authMode,        setAuthMode]        = useState<AuthMode>('login')
@@ -72,6 +72,18 @@ export default function Landing() {
       const result = authMode === 'register'
         ? await authApi.register({ username, password, displayName: displayName.trim(), avatarColor })
         : await authApi.login({ username, password })
+      // Write groups to localStorage BEFORE saving account so the
+      // useSavedGroups useEffect picks them up on the next render.
+      const serverGroups = result.groups.map(g => ({
+        groupId: g.groupId,
+        memberId: g.memberId,
+        name: g.groupName,
+      }))
+      const key = `prenumerator_groups_${result.userId}`
+      const existing: SavedGroup[] = JSON.parse(localStorage.getItem(key) ?? '[]')
+      const merged = [...serverGroups, ...existing.filter(e => !serverGroups.some(s => s.groupId === e.groupId))]
+      localStorage.setItem(key, JSON.stringify(merged))
+      serverGroups.forEach(g => localStorage.setItem(`prenumerator_member_${g.groupId}`, g.memberId))
       saveAccount(result)
     } catch (err) {
       toast.error((err as ApiError).message ?? (authMode === 'register' ? 'Registration failed' : 'Invalid username or password'))

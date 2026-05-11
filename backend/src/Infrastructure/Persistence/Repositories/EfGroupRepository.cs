@@ -20,4 +20,15 @@ public class EfGroupRepository(AppDbContext context)
 
     public async Task AddMemberAsync(GroupMember member, CancellationToken ct = default)
         => await Context.GroupMembers.AddAsync(member, ct);
+
+    public async Task<List<(Guid GroupId, Guid MemberId, string GroupName)>> GetMembershipsByUserIdAsync(
+        string userId, CancellationToken ct = default)
+        => await Context.GroupMembers
+            .Where(m => m.UserId == userId)
+            .Include(m => m.Group)
+            .Select(m => new { m.GroupId, MemberId = m.Id, m.Group.Name })
+            .ToListAsync(ct)
+            .ContinueWith(t => t.Result
+                .Select(x => (x.GroupId, x.MemberId, x.Name))
+                .ToList(), ct);
 }

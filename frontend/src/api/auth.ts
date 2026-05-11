@@ -5,6 +5,7 @@ export interface AuthResult {
   username: string;
   displayName: string;
   avatarColor: string;
+  groups: { groupId: string; memberId: string; groupName: string }[];
 }
 
 export const authApi = {
