@@ -1,0 +1,20 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+logs/
+backend/.env
+
+# EF Core design-time
+backend/src/Infrastructure/Persistence/Migrations/*.Designer.cs
+
+# Node / Vite
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# OS
+.DS_Store
+Thumbs.db
