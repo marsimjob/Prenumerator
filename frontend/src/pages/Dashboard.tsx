@@ -163,7 +163,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="flex items-center gap-2 shrink-0">
             <img
-              src="/logo.png"
+              src="/Logo.png"
               alt=""
               className="h-7 w-auto"
               onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}

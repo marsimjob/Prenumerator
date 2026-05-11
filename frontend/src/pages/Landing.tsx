@@ -25,7 +25,7 @@ function Logo() {
   return (
     <div className="flex items-center gap-3">
       <img
-        src="/logo.png"
+        src="/Logo.png"
         alt=""
         className="h-9 w-auto"
         onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
@@ -112,7 +112,7 @@ export default function Landing() {
       {/* Background image + gradient overlay */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/bg.jpg')" }}
+        style={{ backgroundImage: "url('/istockphoto-889642362-1024x1024.jpg')" }}
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-background" />
 
