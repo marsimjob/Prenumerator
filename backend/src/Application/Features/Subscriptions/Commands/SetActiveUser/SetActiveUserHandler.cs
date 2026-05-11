@@ -21,6 +21,7 @@ public class SetActiveUserHandler(
 
         if (sub.ActiveUser is not null)
         {
+            // MemberId is no longer part of the PK — plain column update.
             sub.ActiveUser.MemberId  = request.MemberId;
             sub.ActiveUser.UpdatedAt = DateTime.UtcNow;
         }
@@ -28,13 +29,12 @@ public class SetActiveUserHandler(
         {
             sub.ActiveUser = new ActiveUser
             {
+                Id             = Guid.NewGuid(),
                 SubscriptionId = request.SubscriptionId,
                 MemberId       = request.MemberId,
                 UpdatedAt      = DateTime.UtcNow,
             };
         }
-
-        repo.Update(sub);
         await uow.SaveChangesAsync(ct);
 
         await notifier.NotifyGroupAsync(

@@ -38,13 +38,12 @@ public class ResolveWatchHandler(
         {
             sub.ActiveUser = new ActiveUser
             {
+                Id             = Guid.NewGuid(),
                 SubscriptionId = sub.Id,
                 MemberId       = request.RequestorMemberId,
                 UpdatedAt      = DateTime.UtcNow,
             };
         }
-
-        repo.Update(sub);
         await uow.SaveChangesAsync(ct);
 
         await notifier.NotifyGroupAsync(

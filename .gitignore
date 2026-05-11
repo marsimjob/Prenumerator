@@ -18,3 +18,9 @@ frontend/.env
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code
+.claude/
+
+# Stray project scaffolds
+Prenumerator/

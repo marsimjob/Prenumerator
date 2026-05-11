@@ -2,6 +2,7 @@ namespace Domain.Entities;
 
 public class ActiveUser
 {
+    public Guid Id { get; set; }
     public Guid SubscriptionId { get; set; }
     public Guid MemberId { get; set; }
     public DateTime UpdatedAt { get; set; }

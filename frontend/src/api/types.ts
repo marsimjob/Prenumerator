@@ -93,6 +93,7 @@ export interface JoinGroupRequest {
 export interface JoinGroupResponse {
   groupId: string;
   memberId: string;
+  groupName: string;
 }
 
 export interface ApiError {

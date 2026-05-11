@@ -8,7 +8,8 @@ public class ActiveUserConfiguration : IEntityTypeConfiguration<ActiveUser>
 {
     public void Configure(EntityTypeBuilder<ActiveUser> builder)
     {
-        builder.HasKey(a => new { a.SubscriptionId, a.MemberId });
+        builder.HasKey(a => a.Id);
+        builder.HasIndex(a => a.SubscriptionId).IsUnique(); // still one-to-one
 
         builder.HasOne(a => a.Subscription)
             .WithOne(s => s.ActiveUser)

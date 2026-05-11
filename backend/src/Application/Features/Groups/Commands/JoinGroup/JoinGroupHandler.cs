@@ -22,7 +22,7 @@ public class JoinGroupHandler(IGroupRepository repo, IUnitOfWork uow)
         // Return existing membership if this userId already joined.
         var existing = group.Members.FirstOrDefault(m => m.UserId == request.UserId);
         if (existing is not null)
-            return new JoinGroupResult(group.Id, existing.Id);
+            return new JoinGroupResult(group.Id, existing.Id, group.Name);
 
         var member = new GroupMember
         {
@@ -36,6 +36,6 @@ public class JoinGroupHandler(IGroupRepository repo, IUnitOfWork uow)
         await repo.AddMemberAsync(member, ct);
         await uow.SaveChangesAsync(ct);
 
-        return new JoinGroupResult(group.Id, member.Id);
+        return new JoinGroupResult(group.Id, member.Id, group.Name);
     }
 }
