@@ -58,13 +58,6 @@ export default function Dashboard() {
   const [phoneInput, setPhoneInput] = useState(() => account?.phoneNumber ?? '')
   const { isEnabled, toggle } = useNotificationPrefs()
 
-  const isGroupCreator = (() => {
-    if (!account?.userId || !groupId) return false
-    try {
-      const saved: SavedGroup[] = JSON.parse(localStorage.getItem(`prenumerator_groups_${account.userId}`) ?? '[]')
-      return saved.find(g => g.groupId === groupId)?.isCreator === true
-    } catch { return false }
-  })()
 
   const myMemberId = groupId
     ? (localStorage.getItem(`prenumerator_member_${groupId}`) ?? null)

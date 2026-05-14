@@ -38,7 +38,7 @@ function CredentialRow({ subscription, isOwner }: { subscription: SubscriptionDt
       setRevealed(false)
     },
     onError: (err) => {
-      const apiErr = err as ApiError
+      const apiErr = err as unknown as ApiError
       toast.error(apiErr.message ?? 'Failed to save credentials')
     },
   })
