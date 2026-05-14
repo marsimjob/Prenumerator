@@ -26,7 +26,7 @@ public class DeleteSubscriptionHandler(
         await notifier.NotifyGroupAsync(
             groupId.ToString(),
             "subscription_deleted",
-            new { id = request.Id, groupId },
+            new { id = request.Id, groupId, name = sub.Name, actorId = sub.OwnerId },
             ct);
 
         return OperationResult.Ok();

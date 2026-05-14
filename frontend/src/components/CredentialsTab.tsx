@@ -14,7 +14,7 @@ interface Props {
 }
 
 const inputClass =
-  'rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring w-full'
+  'border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring w-full'
 
 function CredentialRow({ subscription, isOwner }: { subscription: SubscriptionDto; isOwner: boolean }) {
   const qc = useQueryClient()
@@ -35,6 +35,7 @@ function CredentialRow({ subscription, isOwner }: { subscription: SubscriptionDt
       void qc.invalidateQueries({ queryKey: ['credential', subscription.id] })
       toast.success('Credentials saved')
       setEditing(false)
+      setRevealed(false)
     },
     onError: (err) => {
       const apiErr = err as ApiError
@@ -48,76 +49,117 @@ function CredentialRow({ subscription, isOwner }: { subscription: SubscriptionDt
     setEditing(true)
   }
 
+  const dots = '•'.repeat(12)
+
   return (
-    <Card className="gap-0">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <KeyRound className="w-4 h-4 text-muted-foreground" />
-            <span className="font-medium text-sm">{subscription.name}</span>
+    <Card
+      className="gap-0 border-border"
+      style={{ backgroundColor: `color-mix(in srgb, ${subscription.color} 8%, oklch(0.15 0 0))` }}
+    >
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-3">
+          {/* Identity */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+              style={{ backgroundColor: subscription.ownerAvatarColor }}
+            >
+              {subscription.ownerDisplayName[0].toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="font-semibold text-sm leading-tight truncate">{subscription.name}</p>
+              <p className="text-xs text-muted-foreground">by {subscription.ownerDisplayName}</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {data && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setRevealed(r => !r)}
-                title={revealed ? 'Hide' : 'Reveal'}
-              >
-                {revealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </Button>
-            )}
-            {isOwner && (
-              <Button variant="outline" size="sm" onClick={openEdit}>
-                <Pencil /> {data ? 'Edit' : 'Set credentials'}
-              </Button>
-            )}
-          </div>
+
+          {/* Edit button — owner only */}
+          {isOwner && !editing && (
+            <Button variant="outline" size="sm" onClick={openEdit} className="shrink-0">
+              <Pencil className="w-3.5 h-3.5" />
+              {data ? 'Edit' : 'Set credentials'}
+            </Button>
+          )}
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-0">
         {isFetching && (
-          <p className="text-xs text-muted-foreground">Loading…</p>
+          <p className="text-xs text-muted-foreground py-2">Loading…</p>
         )}
 
-        {!isFetching && isError && !data && (
-          <p className="text-xs text-muted-foreground italic">No credentials set yet.</p>
+        {!isFetching && isError && !data && !editing && (
+          isOwner ? (
+            <p className="text-xs text-muted-foreground py-1">
+              No credentials saved yet — press <span className="text-foreground font-medium">Set credentials</span> to add them.
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground py-1 italic">
+              The owner hasn't set credentials yet.
+            </p>
+          )
         )}
 
         {data && !editing && (
-          <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            <span className="text-muted-foreground">Username</span>
-            <span className="font-mono">{data.username}</span>
-            <span className="text-muted-foreground">Password</span>
-            <span className="font-mono">
-              {revealed ? data.password : '•'.repeat(Math.min(data.password.length, 16))}
-            </span>
+          <div className="flex flex-col gap-2 pt-1">
+            {/* Username row */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground w-20 shrink-0">Username</span>
+              <span className="font-mono text-sm select-all">{data.username}</span>
+            </div>
+
+            {/* Password row — click to reveal */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground w-20 shrink-0">Password</span>
+              <button
+                type="button"
+                onClick={() => setRevealed(r => !r)}
+                className="flex items-center gap-2 font-mono text-sm hover:text-foreground text-muted-foreground transition-colors group"
+                title={revealed ? 'Click to hide' : 'Click to reveal'}
+              >
+                <span className="select-all">
+                  {revealed ? data.password : dots}
+                </span>
+                <span className="opacity-0 group-hover:opacity-60 transition-opacity">
+                  {revealed
+                    ? <EyeOff className="w-3.5 h-3.5" />
+                    : <Eye className="w-3.5 h-3.5" />
+                  }
+                </span>
+              </button>
+            </div>
           </div>
         )}
 
         {editing && (
           <form
             onSubmit={e => { e.preventDefault(); upsert.mutate() }}
-            className="flex flex-col gap-3"
+            className="flex flex-col gap-3 pt-1"
           >
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Username</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                <KeyRound className="w-3 h-3 inline mr-1 mb-0.5" />
+                Username / email
+              </label>
               <input
                 className={inputClass}
                 value={username}
                 onChange={e => setUsername(e.target.value)}
+                placeholder="e.g. mario@email.com"
                 required
                 autoFocus
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-muted-foreground">Password</label>
+              <label className="text-xs font-medium text-muted-foreground">
+                <KeyRound className="w-3 h-3 inline mr-1 mb-0.5" />
+                Password
+              </label>
               <input
                 type="password"
                 className={inputClass}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
                 required
               />
             </div>
@@ -125,12 +167,7 @@ function CredentialRow({ subscription, isOwner }: { subscription: SubscriptionDt
               <Button type="submit" size="sm" disabled={upsert.isPending}>
                 {upsert.isPending ? 'Saving…' : 'Save'}
               </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditing(false)}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
                 Cancel
               </Button>
             </div>
@@ -151,7 +188,7 @@ export default function CredentialsTab({ subscriptions, myMemberId }: Props) {
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="flex flex-col gap-3">
       {subscriptions.map(sub => (
         <CredentialRow
           key={sub.id}

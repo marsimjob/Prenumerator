@@ -22,11 +22,12 @@ public class RegisterHandler(IUserRepository repo, IUnitOfWork uow, IPasswordHas
             PasswordHash = hasher.Hash(request.Password),
             DisplayName  = request.DisplayName.Trim(),
             AvatarColor  = request.AvatarColor,
+            PhoneNumber  = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
         };
 
         await repo.AddAsync(user, ct);
         await uow.SaveChangesAsync(ct);
 
-        return new AuthResultDto(user.Id, user.Username, user.DisplayName, user.AvatarColor, []);
+        return new AuthResultDto(user.Id, user.Username, user.DisplayName, user.AvatarColor, null, []);
     }
 }

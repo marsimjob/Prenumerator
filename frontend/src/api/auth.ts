@@ -5,7 +5,8 @@ export interface AuthResult {
   username: string;
   displayName: string;
   avatarColor: string;
-  groups: { groupId: string; memberId: string; groupName: string }[];
+  phoneNumber: string | null;
+  groups: { groupId: string; memberId: string; groupName: string; isCreator: boolean }[];
 }
 
 export const authApi = {
@@ -14,8 +15,12 @@ export const authApi = {
     password: string;
     displayName: string;
     avatarColor: string;
+    phoneNumber?: string;
   }) => api.post<AuthResult>("/api/auth/register", body),
 
   login: (body: { username: string; password: string }) =>
     api.post<AuthResult>("/api/auth/login", body),
+
+  updatePhone: (userId: string, phoneNumber: string | null) =>
+    api.put<void>(`/api/auth/${userId}/phone`, { phoneNumber }),
 };

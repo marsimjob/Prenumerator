@@ -20,9 +20,9 @@ public class LoginHandler(IUserRepository repo, IPasswordHasher hasher, IGroupRe
 
         var memberships = await groupRepo.GetMembershipsByUserIdAsync(user.Id.ToString(), ct);
         var groups = memberships
-            .Select(m => new UserGroupDto(m.GroupId, m.MemberId, m.GroupName))
+            .Select(m => new UserGroupDto(m.GroupId, m.MemberId, m.GroupName, m.IsCreator))
             .ToList();
 
-        return new AuthResultDto(user.Id, user.Username, user.DisplayName, user.AvatarColor, groups);
+        return new AuthResultDto(user.Id, user.Username, user.DisplayName, user.AvatarColor, user.PhoneNumber, groups);
     }
 }

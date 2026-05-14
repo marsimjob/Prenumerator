@@ -4,5 +4,5 @@ using MediatR;
 
 namespace Application.Features.Auth.Commands.Register;
 
-public record RegisterCommand(string Username, string Password, string DisplayName, string AvatarColor)
+public record RegisterCommand(string Username, string Password, string DisplayName, string AvatarColor, string? PhoneNumber)
     : IRequest<OperationResult<AuthResultDto>>;

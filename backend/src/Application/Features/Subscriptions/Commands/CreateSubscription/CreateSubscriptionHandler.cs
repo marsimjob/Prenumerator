@@ -39,7 +39,7 @@ public class CreateSubscriptionHandler(
         await notifier.NotifyGroupAsync(
             request.GroupId.ToString(),
             "subscription_created",
-            new { id = subscription.Id, groupId = request.GroupId },
+            new { id = subscription.Id, groupId = request.GroupId, name = subscription.Name, actorId = request.OwnerId },
             ct);
 
         return OperationResult<Guid>.Ok(subscription.Id);

@@ -31,7 +31,7 @@ public class UpdateSubscriptionHandler(
         await notifier.NotifyGroupAsync(
             sub.GroupId.ToString(),
             "subscription_updated",
-            new { id = sub.Id, groupId = sub.GroupId },
+            new { id = sub.Id, groupId = sub.GroupId, name = sub.Name },
             ct);
 
         return OperationResult.Ok();

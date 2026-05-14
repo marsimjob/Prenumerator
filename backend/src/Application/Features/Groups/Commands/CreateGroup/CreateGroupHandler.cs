@@ -16,9 +16,10 @@ public class CreateGroupHandler(IGroupRepository repo, IUnitOfWork uow)
     {
         var group = new Group
         {
-            Id         = Guid.NewGuid(),
-            Name       = request.Name.Trim(),
-            InviteCode = GenerateInviteCode(),
+            Id             = Guid.NewGuid(),
+            Name           = request.Name.Trim(),
+            InviteCode     = GenerateInviteCode(),
+            CreatorUserId  = request.UserId,
         };
 
         var member = new GroupMember

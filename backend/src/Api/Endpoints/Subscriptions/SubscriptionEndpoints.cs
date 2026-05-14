@@ -1,4 +1,6 @@
 using Application.Features.Subscriptions.Commands.AddSubscriptionMember;
+using Application.Features.Subscriptions.Commands.ClearActiveUser;
+using Application.Features.Subscriptions.Commands.RemoveSubscriptionMember;
 using Application.Features.Subscriptions.Commands.RequestWatch;
 using Application.Features.Subscriptions.Commands.ResolveWatch;
 using Application.Features.Subscriptions.Commands.ToggleSharedWatcher;
@@ -32,8 +34,10 @@ public static class SubscriptionEndpoints
         byId.MapGet("/{id:guid}",                  GetById);
         byId.MapPut("/{id:guid}",                  Update);
         byId.MapDelete("/{id:guid}",               Delete);
-        byId.MapPut("/{id:guid}/active-user",      SetActiveUser);
-        byId.MapPost("/{id:guid}/members",           AddMember);
+        byId.MapPut("/{id:guid}/active-user",       SetActiveUser);
+        byId.MapDelete("/{id:guid}/active-user",    ClearActiveUser);
+        byId.MapPost("/{id:guid}/members",             AddMember);
+        byId.MapDelete("/{id:guid}/members/{memberId:guid}", RemoveMember);
         byId.MapPost("/{id:guid}/shared-watcher",  ToggleSharedWatcher);
         byId.MapPost("/{id:guid}/request-watch",   RequestWatch);
         byId.MapPost("/{id:guid}/resolve-watch",   ResolveWatch);
@@ -124,6 +128,19 @@ public static class SubscriptionEndpoints
             : Results.NotFound(result.Error);
     }
 
+    // DELETE /api/subscriptions/{id}/members/{memberId}
+    private static async Task<IResult> RemoveMember(
+        Guid id,
+        Guid memberId,
+        ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new RemoveSubscriptionMemberCommand(id, memberId), ct);
+        return result.IsSuccess
+            ? Results.NoContent()
+            : Results.NotFound(result.Error);
+    }
+
     // POST /api/subscriptions/{id}/shared-watcher
     private static async Task<IResult> ToggleSharedWatcher(
         Guid id, AddSubscriptionMemberRequest req, ISender sender, CancellationToken ct)
@@ -159,6 +176,17 @@ public static class SubscriptionEndpoints
         return result.IsSuccess
             ? Results.NoContent()
             : Results.NotFound(result.Error);
+    }
+
+    // DELETE /api/subscriptions/{id}/active-user?memberId={memberId}
+    private static async Task<IResult> ClearActiveUser(
+        Guid id,
+        Guid memberId,
+        ISender sender,
+        CancellationToken ct)
+    {
+        var result = await sender.Send(new ClearActiveUserCommand(id, memberId), ct);
+        return result.IsSuccess ? Results.NoContent() : Results.NotFound(result.Error);
     }
 }
 

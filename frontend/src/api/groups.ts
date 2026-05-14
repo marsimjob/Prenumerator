@@ -16,4 +16,10 @@ export const groupsApi = {
 
   get: (groupId: string) =>
     api.get<GroupDto>(`/api/groups/${groupId}`),
+
+  rename: (groupId: string, userId: string, name: string) =>
+    api.patch<void>(`/api/groups/${groupId}`, { userId, name }),
+
+  delete: (groupId: string, userId: string) =>
+    api.delete<void>(`/api/groups/${groupId}?userId=${userId}`),
 };

@@ -11,6 +11,7 @@ public record SubscriptionDto(
     Guid OwnerId,
     string OwnerDisplayName,
     string OwnerAvatarColor,
+    string? OwnerSwishNumber,
     List<SubscriptionMemberDto> Members,
     List<Guid> ActiveMemberIds,
     DateTime CreatedAt,

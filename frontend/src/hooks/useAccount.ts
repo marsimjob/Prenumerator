@@ -7,6 +7,7 @@ export interface Account {
   username: string
   displayName: string
   avatarColor: string
+  phoneNumber: string | null
 }
 
 export function useAccount() {
@@ -24,10 +25,17 @@ export function useAccount() {
     setAccount(a)
   }
 
+  function updatePhone(phoneNumber: string | null) {
+    if (!account) return
+    const updated = { ...account, phoneNumber }
+    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(updated))
+    setAccount(updated)
+  }
+
   function clearAccount() {
     localStorage.removeItem(ACCOUNT_KEY)
     setAccount(null)
   }
 
-  return { account, saveAccount, clearAccount }
+  return { account, saveAccount, updatePhone, clearAccount }
 }

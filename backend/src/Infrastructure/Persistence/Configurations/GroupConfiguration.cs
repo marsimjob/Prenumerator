@@ -11,6 +11,7 @@ public class GroupConfiguration : IEntityTypeConfiguration<Group>
         builder.HasKey(g => g.Id);
         builder.Property(g => g.Name).HasMaxLength(100).IsRequired();
         builder.Property(g => g.InviteCode).HasMaxLength(12).IsRequired();
+        builder.Property(g => g.CreatorUserId).HasMaxLength(256);
         builder.HasIndex(g => g.InviteCode).IsUnique();
 
         builder.HasMany(g => g.Members)

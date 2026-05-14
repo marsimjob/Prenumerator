@@ -29,13 +29,13 @@ public class UpsertCredentialHandler(
         }
         else
         {
-            sub.Credential = new Credential
+            await repo.AddCredentialAsync(new Credential
             {
                 Id                  = Guid.NewGuid(),
                 SubscriptionId      = sub.Id,
                 UsernameEncrypted   = encUsername,
                 PasswordEncrypted   = encPassword,
-            };
+            }, ct);
         }
 
         await uow.SaveChangesAsync(ct);

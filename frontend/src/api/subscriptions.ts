@@ -28,11 +28,17 @@ export const subscriptionsApi = {
   addMember: (id: string, memberId: string) =>
     api.post<void>(`/api/subscriptions/${id}/members`, { memberId }),
 
+  removeMember: (id: string, memberId: string) =>
+    api.delete<void>(`/api/subscriptions/${id}/members/${memberId}`),
+
   requestWatch: (id: string, requestorMemberId: string) =>
     api.post<void>(`/api/subscriptions/${id}/request-watch`, { requestorMemberId }),
 
   resolveWatch: (id: string, requestorMemberId: string, accepted: boolean) =>
     api.post<void>(`/api/subscriptions/${id}/resolve-watch`, { requestorMemberId, accepted }),
+
+  stopWatching: (id: string, memberId: string) =>
+    api.delete<void>(`/api/subscriptions/${id}/active-user?memberId=${memberId}`),
 
   toggleSharedWatcher: (id: string, memberId: string) =>
     api.post<void>(`/api/subscriptions/${id}/shared-watcher`, { memberId }),

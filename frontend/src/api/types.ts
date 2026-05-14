@@ -18,6 +18,7 @@ export interface SubscriptionDto {
   ownerId: string;
   ownerDisplayName: string;
   ownerAvatarColor: string;
+  ownerSwishNumber: string | null;
   members: SubscriptionMemberDto[];
   activeMemberIds: string[];
   createdAt: string;

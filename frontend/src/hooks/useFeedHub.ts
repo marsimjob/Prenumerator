@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   HubConnectionBuilder,
   HubConnectionState,
@@ -14,6 +14,10 @@ const GROUP_EVENTS = [
   'subscription_created',
   'subscription_updated',
   'subscription_deleted',
+  'member_joined',
+  'member_left',
+  'watcher_changed',
+  'watcher_cleared',
 ] as const
 
 export type FeedEventType = typeof GROUP_EVENTS[number]
@@ -21,7 +25,16 @@ export type FeedEventType = typeof GROUP_EVENTS[number]
 export interface FeedLogEntry {
   type: FeedEventType
   subscriptionId: string
+  subscriptionName: string
+  actorId?: string
   timestamp: Date
+}
+
+interface GroupEventPayload {
+  id: string
+  groupId: string
+  name?: string
+  actorId?: string
 }
 
 interface WatchRequestedPayload {
@@ -39,9 +52,12 @@ interface WatchResolvedPayload {
 export function useFeedHub(
   groupId: string | undefined,
   myMemberId: string | null,
+  onNotify?: (entry: FeedLogEntry) => void,
 ): FeedLogEntry[] {
   const qc = useQueryClient()
   const [feedLog, setFeedLog] = useState<FeedLogEntry[]>([])
+  const onNotifyRef = useRef(onNotify)
+  onNotifyRef.current = onNotify
 
   useEffect(() => {
     if (!groupId) return
@@ -52,17 +68,23 @@ export function useFeedHub(
       .configureLogging(LogLevel.Warning)
       .build()
 
-    // Group-level events → invalidate subscriptions query + append to feed log
     for (const eventType of GROUP_EVENTS) {
-      connection.on(eventType, (payload: { id: string }) => {
+      connection.on(eventType, (payload: GroupEventPayload) => {
         void qc.invalidateQueries({ queryKey: ['subscriptions', groupId] })
-        setFeedLog(prev =>
-          [{ type: eventType, subscriptionId: payload.id, timestamp: new Date() }, ...prev].slice(0, 50)
-        )
+
+        const entry: FeedLogEntry = {
+          type: eventType,
+          subscriptionId: payload.id,
+          subscriptionName: payload.name ?? payload.id,
+          actorId: payload.actorId,
+          timestamp: new Date(),
+        }
+
+        setFeedLog(prev => [entry, ...prev].slice(0, 50))
+        onNotifyRef.current?.(entry)
       })
     }
 
-    // Member-targeted: someone wants to take your spot
     connection.on('watch_requested', (payload: WatchRequestedPayload) => {
       toast(`${payload.requestorName} wants to watch ${payload.subscriptionName}`, {
         duration: Infinity,
@@ -85,13 +107,11 @@ export function useFeedHub(
       })
     })
 
-    // Member-targeted: your watch request was accepted
     connection.on('watch_accepted', (payload: WatchResolvedPayload) => {
       toast.success(`You're now watching ${payload.subscriptionName}`)
       void qc.invalidateQueries({ queryKey: ['subscriptions', groupId] })
     })
 
-    // Member-targeted: your watch request was declined
     connection.on('watch_declined', (payload: WatchResolvedPayload) => {
       toast.error(`Your request to watch ${payload.subscriptionName} was declined`)
     })

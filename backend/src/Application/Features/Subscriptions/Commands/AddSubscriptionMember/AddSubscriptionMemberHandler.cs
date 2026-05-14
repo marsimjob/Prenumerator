@@ -32,8 +32,8 @@ public class AddSubscriptionMemberHandler(
 
         await notifier.NotifyGroupAsync(
             sub.GroupId.ToString(),
-            "subscription_updated",
-            new { id = sub.Id, groupId = sub.GroupId },
+            "member_joined",
+            new { id = sub.Id, groupId = sub.GroupId, name = sub.Name, actorId = request.MemberId },
             ct);
 
         return OperationResult.Ok();

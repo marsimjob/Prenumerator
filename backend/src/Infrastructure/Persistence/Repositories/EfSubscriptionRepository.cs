@@ -29,4 +29,22 @@ public class EfSubscriptionRepository(AppDbContext context)
 
     public async Task AddSubscriptionMemberAsync(Domain.Entities.SubscriptionMember member, CancellationToken ct = default)
         => await Context.SubscriptionMembers.AddAsync(member, ct);
+
+    public Task RemoveSubscriptionMemberAsync(Domain.Entities.SubscriptionMember member, CancellationToken ct = default)
+    {
+        Context.SubscriptionMembers.Remove(member);
+        return Task.CompletedTask;
+    }
+
+    public async Task AddActiveUserAsync(Domain.Entities.ActiveUser activeUser, CancellationToken ct = default)
+        => await Context.ActiveUsers.AddAsync(activeUser, ct);
+
+    public Task RemoveActiveUserAsync(Domain.Entities.ActiveUser activeUser, CancellationToken ct = default)
+    {
+        Context.ActiveUsers.Remove(activeUser);
+        return Task.CompletedTask;
+    }
+
+    public async Task AddCredentialAsync(Domain.Entities.Credential credential, CancellationToken ct = default)
+        => await Context.Credentials.AddAsync(credential, ct);
 }

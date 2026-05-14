@@ -7,4 +7,5 @@ public record AuthResultDto(
     string Username,
     string DisplayName,
     string AvatarColor,
+    string? PhoneNumber,
     List<UserGroupDto> Groups);
