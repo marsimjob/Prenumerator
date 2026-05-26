@@ -1,0 +1,62 @@
+name: Build and deploy ASP.Net Core app to Azure Web App - prenumerator
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Build with dotnet
+        run: dotnet build --configuration Release
+        working-directory: backend
+
+      - name: dotnet publish
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        working-directory: backend
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: .net-app
+          path: ${{env.DOTNET_ROOT}}/myapp
+
+  deploy:
+    runs-on: windows-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: .net-app
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_09471EF8C61F45EB8AB6F12D413BB44C }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_2BA92749D54447B29E88E2E5F392A375 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_929197BF2AAB4D74BE115D0081DE7D25 }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'prenumerator'
+          slot-name: 'Production'
+          package: .
