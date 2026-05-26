@@ -34,7 +34,7 @@ function Logo() {
   )
 }
 
-type AuthMode  = 'login' | 'register'
+type AuthMode  = 'login' | 'register' | 'verify' | 'forgot'
 type GroupMode = 'create' | 'join'
 
 export default function Landing() {
@@ -44,13 +44,15 @@ export default function Landing() {
 
   // Auth fields
   const [authMode,        setAuthMode]        = useState<AuthMode>('login')
-  const [username,        setUsername]        = useState('')
+  const [email,           setEmail]           = useState('')
   const [password,        setPassword]        = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [displayName,     setDisplayName]     = useState('')
   const [avatarColor,     setAvatarColor]     = useState(AVATAR_COLORS[0])
   const [phoneNumber,     setPhoneNumber]     = useState('')
   const [authPending,     setAuthPending]     = useState(false)
+  const [verifyCode,      setVerifyCode]      = useState('')
+  const [pendingEmail,    setPendingEmail]    = useState('')
 
   // Group fields
   const [groupMode,    setGroupMode]    = useState<GroupMode>('create')
@@ -65,6 +67,24 @@ export default function Landing() {
   const [renamePending, setRenamePending] = useState(false)
   const [deletingId,  setDeletingId]  = useState<string | null>(null)
 
+  function applyAuthResult(result: { userId: string; email: string; displayName: string; avatarColor: string; phoneNumber: string | null; groups: { groupId: string; memberId: string; groupName: string; isCreator: boolean }[] }) {
+    const removed = loadRemoved(result.userId)
+    const serverGroups: SavedGroup[] = result.groups
+      .filter(g => !removed.has(g.groupId))
+      .map(g => ({
+        groupId:   g.groupId,
+        memberId:  g.memberId,
+        name:      g.groupName,
+        isCreator: g.isCreator,
+      }))
+    const key = `prenumerator_groups_${result.userId}`
+    const existing: SavedGroup[] = JSON.parse(localStorage.getItem(key) ?? '[]')
+    const merged = [...serverGroups, ...existing.filter(e => !serverGroups.some(s => s.groupId === e.groupId) && !removed.has(e.groupId))]
+    localStorage.setItem(key, JSON.stringify(merged))
+    serverGroups.forEach(g => localStorage.setItem(`prenumerator_member_${g.groupId}`, g.memberId))
+    saveAccount({ ...result, phoneNumber: result.phoneNumber ?? null })
+  }
+
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault()
     if (authMode === 'register' && password !== confirmPassword) {
@@ -72,27 +92,45 @@ export default function Landing() {
     }
     setAuthPending(true)
     try {
-      const result = authMode === 'register'
-        ? await authApi.register({ username, password, displayName: displayName.trim(), avatarColor, phoneNumber: phoneNumber.trim() || undefined })
-        : await authApi.login({ username, password })
-
-      const removed = loadRemoved(result.userId)
-      const serverGroups: SavedGroup[] = result.groups
-        .filter(g => !removed.has(g.groupId))
-        .map(g => ({
-          groupId:   g.groupId,
-          memberId:  g.memberId,
-          name:      g.groupName,
-          isCreator: g.isCreator,
-        }))
-      const key = `prenumerator_groups_${result.userId}`
-      const existing: SavedGroup[] = JSON.parse(localStorage.getItem(key) ?? '[]')
-      const merged = [...serverGroups, ...existing.filter(e => !serverGroups.some(s => s.groupId === e.groupId) && !removed.has(e.groupId))]
-      localStorage.setItem(key, JSON.stringify(merged))
-      serverGroups.forEach(g => localStorage.setItem(`prenumerator_member_${g.groupId}`, g.memberId))
-      saveAccount({ ...result, phoneNumber: result.phoneNumber ?? null })
+      if (authMode === 'register') {
+        await authApi.register({ email: email.trim().toLowerCase(), password, displayName: displayName.trim(), avatarColor, phoneNumber: phoneNumber.trim() || undefined })
+        setPendingEmail(email.trim().toLowerCase())
+        setAuthMode('verify')
+        toast.success('Verification code sent! Check your inbox.')
+      } else {
+        const result = await authApi.login({ email: email.trim().toLowerCase(), password })
+        applyAuthResult(result)
+      }
     } catch (err) {
-      toast.error((err as ApiError).message ?? (authMode === 'register' ? 'Registration failed' : 'Invalid username or password'))
+      toast.error((err as ApiError).message ?? (authMode === 'register' ? 'Registration failed' : 'Invalid email or password'))
+    } finally {
+      setAuthPending(false)
+    }
+  }
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault()
+    setAuthPending(true)
+    try {
+      const result = await authApi.verifyEmail({ email: pendingEmail, code: verifyCode.trim() })
+      applyAuthResult(result)
+      toast.success('Email verified! Welcome.')
+    } catch (err) {
+      toast.error((err as ApiError).message ?? 'Invalid verification code')
+    } finally {
+      setAuthPending(false)
+    }
+  }
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault()
+    setAuthPending(true)
+    try {
+      await authApi.forgotPassword({ email: email.trim().toLowerCase() })
+      toast.success('If that email is registered, a new password has been sent.')
+      setAuthMode('login')
+    } catch {
+      toast.success('If that email is registered, a new password has been sent.')
     } finally {
       setAuthPending(false)
     }
@@ -175,7 +213,7 @@ export default function Landing() {
         <div className="w-full max-w-md">
 
           {/* ── Step 1: not signed in ── */}
-          {!account && (
+          {!account && authMode !== 'verify' && authMode !== 'forgot' && (
             <div className="notched bg-black/70 backdrop-blur-md border border-white/10 p-8 shadow-2xl">
               <h1 className="font-display font-extrabold text-4xl text-white mb-1">
                 {authMode === 'login' ? 'Sign in' : 'Create account'}
@@ -190,9 +228,9 @@ export default function Landing() {
               </p>
 
               <form onSubmit={handleAuth} className="flex flex-col gap-4">
-                <input className={inputClass} placeholder="Username" value={username}
-                  onChange={e => setUsername(e.target.value.toLowerCase().replace(/\s/g, ''))}
-                  minLength={3} required autoFocus />
+                <input type="email" className={inputClass} placeholder="Email address" value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  required autoFocus />
 
                 {authMode === 'register' && (
                   <input className={inputClass} placeholder="Display name (shown to your group)"
@@ -227,6 +265,66 @@ export default function Landing() {
                 <Button type="submit" disabled={authPending} className="w-full mt-2 h-12 text-base font-bold">
                   {authPending ? '…' : authMode === 'login' ? 'Sign in' : 'Create account'}
                 </Button>
+
+                {authMode === 'login' && (
+                  <button type="button"
+                    onClick={() => { setAuthMode('forgot'); setVerifyCode('') }}
+                    className="text-xs text-white/40 hover:text-white/70 transition-colors self-center">
+                    Forgot password?
+                  </button>
+                )}
+              </form>
+            </div>
+          )}
+
+          {/* ── Email verification step ── */}
+          {!account && authMode === 'verify' && (
+            <div className="notched bg-black/70 backdrop-blur-md border border-white/10 p-8 shadow-2xl">
+              <h1 className="font-display font-extrabold text-4xl text-white mb-1">Check your inbox</h1>
+              <p className="text-sm text-white/50 mb-6">
+                We sent a 6-digit code to <span className="text-white/80">{pendingEmail}</span>.
+                Paste it below to finish creating your account.
+              </p>
+              <form onSubmit={handleVerify} className="flex flex-col gap-4">
+                <input
+                  className={`${inputClass} font-mono tracking-[0.4em] text-center text-2xl`}
+                  placeholder="000000"
+                  value={verifyCode}
+                  onChange={e => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength={6}
+                  required
+                  autoFocus
+                />
+                <Button type="submit" disabled={authPending || verifyCode.length !== 6} className="w-full h-12 text-base font-bold">
+                  {authPending ? '…' : 'Verify email'}
+                </Button>
+                <button type="button"
+                  onClick={() => setAuthMode('register')}
+                  className="text-xs text-white/40 hover:text-white/70 transition-colors self-center">
+                  ← Back
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* ── Forgot password step ── */}
+          {!account && authMode === 'forgot' && (
+            <div className="notched bg-black/70 backdrop-blur-md border border-white/10 p-8 shadow-2xl">
+              <h1 className="font-display font-extrabold text-4xl text-white mb-1">Reset password</h1>
+              <p className="text-sm text-white/50 mb-6">
+                Enter your email and we'll send you a new password.
+              </p>
+              <form onSubmit={handleForgotPassword} className="flex flex-col gap-4">
+                <input type="email" className={inputClass} placeholder="Email address"
+                  value={email} onChange={e => setEmail(e.target.value)} required autoFocus />
+                <Button type="submit" disabled={authPending} className="w-full h-12 text-base font-bold">
+                  {authPending ? '…' : 'Send new password'}
+                </Button>
+                <button type="button"
+                  onClick={() => setAuthMode('login')}
+                  className="text-xs text-white/40 hover:text-white/70 transition-colors self-center">
+                  ← Back to sign in
+                </button>
               </form>
             </div>
           )}
@@ -244,7 +342,7 @@ export default function Landing() {
                   </span>
                   <div className="text-sm">
                     <p className="font-semibold text-white leading-tight">{account.displayName}</p>
-                    <p className="text-white/40 text-xs">@{account.username}</p>
+                    <p className="text-white/40 text-xs">{account.email}</p>
                   </div>
                 </div>
                 <button type="button" onClick={clearAccount}

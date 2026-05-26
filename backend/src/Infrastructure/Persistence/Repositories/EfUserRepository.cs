@@ -7,11 +7,14 @@ namespace Infrastructure.Persistence.Repositories;
 public class EfUserRepository(AppDbContext context)
     : EfRepository<User>(context), IUserRepository
 {
-    public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default)
-        => await Context.Users.FirstOrDefaultAsync(u => u.Username == username, ct);
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
+        => await Context.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
 
-    public async Task<bool> UsernameExistsAsync(string username, CancellationToken ct = default)
-        => await Context.Users.AnyAsync(u => u.Username == username, ct);
+    public async Task<bool> EmailExistsAsync(string email, CancellationToken ct = default)
+        => await Context.Users.AnyAsync(u => u.Email == email, ct);
+
+    public async Task<User?> GetByVerificationCodeAsync(string code, CancellationToken ct = default)
+        => await Context.Users.FirstOrDefaultAsync(u => u.VerificationCode == code, ct);
 
     public async Task<IReadOnlyList<User>> GetByStringIdsAsync(IEnumerable<string> ids, CancellationToken ct = default)
     {

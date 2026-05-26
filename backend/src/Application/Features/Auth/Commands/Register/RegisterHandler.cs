@@ -1,5 +1,4 @@
 using Application.Common.Interfaces;
-using Application.Features.Auth.Dtos;
 using Domain.Common;
 using Domain.Entities;
 using Domain.Interfaces;
@@ -7,27 +6,35 @@ using MediatR;
 
 namespace Application.Features.Auth.Commands.Register;
 
-public class RegisterHandler(IUserRepository repo, IUnitOfWork uow, IPasswordHasher hasher)
-    : IRequestHandler<RegisterCommand, OperationResult<AuthResultDto>>
+public class RegisterHandler(IUserRepository repo, IUnitOfWork uow, IPasswordHasher hasher, IEmailService emailService)
+    : IRequestHandler<RegisterCommand, OperationResult<string>>
 {
-    public async Task<OperationResult<AuthResultDto>> Handle(RegisterCommand request, CancellationToken ct)
+    public async Task<OperationResult<string>> Handle(RegisterCommand request, CancellationToken ct)
     {
-        if (await repo.UsernameExistsAsync(request.Username, ct))
-            return OperationResult<AuthResultDto>.Fail("USERNAME_TAKEN", "That username is already taken.");
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        if (await repo.EmailExistsAsync(email, ct))
+            return OperationResult<string>.Fail("EMAIL_TAKEN", "An account with that email already exists.");
+
+        var code = Random.Shared.Next(100000, 999999).ToString();
 
         var user = new User
         {
-            Id           = Guid.NewGuid(),
-            Username     = request.Username.Trim().ToLowerInvariant(),
-            PasswordHash = hasher.Hash(request.Password),
-            DisplayName  = request.DisplayName.Trim(),
-            AvatarColor  = request.AvatarColor,
-            PhoneNumber  = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
+            Id                     = Guid.NewGuid(),
+            Email                  = email,
+            PasswordHash           = hasher.Hash(request.Password),
+            DisplayName            = request.DisplayName.Trim(),
+            AvatarColor            = request.AvatarColor,
+            PhoneNumber            = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
+            IsEmailVerified        = false,
+            VerificationCode       = code,
+            VerificationCodeExpiry = DateTime.UtcNow.AddHours(24),
         };
 
         await repo.AddAsync(user, ct);
         await uow.SaveChangesAsync(ct);
+        await emailService.SendVerificationCodeAsync(email, code, ct);
 
-        return new AuthResultDto(user.Id, user.Username, user.DisplayName, user.AvatarColor, null, []);
+        return OperationResult<string>.Ok("VERIFICATION_SENT");
     }
 }

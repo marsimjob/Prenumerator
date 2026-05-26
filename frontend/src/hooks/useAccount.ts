@@ -4,7 +4,7 @@ const ACCOUNT_KEY = 'prenumerator_account'
 
 export interface Account {
   userId: string
-  username: string
+  email: string
   displayName: string
   avatarColor: string
   phoneNumber: string | null

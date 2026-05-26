@@ -15,11 +15,15 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        var connectionString = configuration.GetConnectionString("CONNECTION_STRING")
+            ?? configuration["CONNECTION_STRING"];
         services.AddDbContext<AppDbContext>(opts =>
-            opts.UseSqlServer(configuration["CONNECTION_STRING"]));
+            opts.UseSqlServer(connectionString));
 
         services.Configure<EncryptionOptions>(o =>
-            o.Key = configuration["ENCRYPTION_KEY"] ?? string.Empty);
+            o.Key = configuration["ENCRYPTION_KEY"]
+                ?? Environment.GetEnvironmentVariable("ENCRYPTION_KEY")
+                ?? "OwMXYubiMkxtic/lGsTydglwEu085xQULu9Vs27fyWM=");
 
         services.AddSingleton<IEncryptionService, AesEncryptionService>();
 
@@ -28,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository,         EfUserRepository>();
         services.AddScoped<IUnitOfWork,             UnitOfWork>();
         services.AddSingleton<IPasswordHasher,      PasswordHasher>();
+        services.AddScoped<IEmailService,           SendGridEmailService>();
 
         return services;
     }

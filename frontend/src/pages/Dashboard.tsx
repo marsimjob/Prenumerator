@@ -386,7 +386,7 @@ export default function Dashboard() {
                   </span>
                   <div>
                     <p className="font-semibold text-sm">{account.displayName}</p>
-                    <p className="text-xs text-muted-foreground">@{account.username}</p>
+                    <p className="text-xs text-muted-foreground">{account.email}</p>
                   </div>
                 </div>
               )}

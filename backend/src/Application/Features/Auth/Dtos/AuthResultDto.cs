@@ -4,7 +4,7 @@ namespace Application.Features.Auth.Dtos;
 
 public record AuthResultDto(
     Guid UserId,
-    string Username,
+    string Email,
     string DisplayName,
     string AvatarColor,
     string? PhoneNumber,

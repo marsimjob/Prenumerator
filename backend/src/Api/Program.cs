@@ -1,4 +1,7 @@
 using Api.Endpoints.Auth;
+using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 using Api.Endpoints.Credentials;
 using Api.Endpoints.Groups;
 using Api.Endpoints.Subscriptions;
@@ -29,8 +32,11 @@ try
     builder.Services.AddOpenApi();
     builder.Services.AddSignalR();
 
+    var corsOrigin = builder.Configuration["CORS_ORIGIN"]
+        ?? Environment.GetEnvironmentVariable("CORS_ORIGIN")
+        ?? "http://localhost:5173";
     builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
-        .WithOrigins("http://localhost:5173")
+        .WithOrigins(corsOrigin, "https://thriving-hamster-3df49e.netlify.app")
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials()));
@@ -42,14 +48,23 @@ try
 
     var app = builder.Build();
 
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.Migrate();
+    }
+
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseCors();
     app.UseSerilogRequestLogging();
 
-    if (app.Environment.IsDevelopment())
-        app.MapOpenApi();
+    app.MapOpenApi();
+    app.MapScalarApiReference();
 
-    app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+    app.MapGet("/health", (IConfiguration cfg) => Results.Ok(new {
+        status = "ok",
+        encKeyLength = Convert.FromBase64String(cfg["ENCRYPTION_KEY"] ?? Environment.GetEnvironmentVariable("ENCRYPTION_KEY") ?? "").Length
+    }));
 
     app.MapAuthEndpoints();
     app.MapGroupEndpoints();

@@ -26,7 +26,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
             logger.LogError(ex, "Unhandled exception for {Path}", ctx.Request.Path);
             ctx.Response.StatusCode  = StatusCodes.Status500InternalServerError;
             ctx.Response.ContentType = "application/json";
-            await ctx.Response.WriteAsJsonAsync(new { error = "Något gick fel. Försök igen senare." });
+            await ctx.Response.WriteAsJsonAsync(new { error = ex.Message, type = ex.GetType().Name });
         }
     }
 }

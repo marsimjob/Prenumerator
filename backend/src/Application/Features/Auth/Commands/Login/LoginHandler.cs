@@ -12,17 +12,20 @@ public class LoginHandler(IUserRepository repo, IPasswordHasher hasher, IGroupRe
 {
     public async Task<OperationResult<AuthResultDto>> Handle(LoginCommand request, CancellationToken ct)
     {
-        var user = await repo.GetByUsernameAsync(request.Username.Trim().ToLowerInvariant(), ct);
+        var user = await repo.GetByEmailAsync(request.Email.Trim().ToLowerInvariant(), ct);
 
-        // Same error for wrong username and wrong password to prevent user enumeration.
+        // Same error for all failure cases to prevent user enumeration.
         if (user is null || !hasher.Verify(request.Password, user.PasswordHash))
-            return OperationResult<AuthResultDto>.Fail("INVALID_CREDENTIALS", "Invalid username or password.");
+            return OperationResult<AuthResultDto>.Fail("INVALID_CREDENTIALS", "Invalid email or password.");
+
+        if (!user.IsEmailVerified)
+            return OperationResult<AuthResultDto>.Fail("EMAIL_NOT_VERIFIED", "Please verify your email before signing in.");
 
         var memberships = await groupRepo.GetMembershipsByUserIdAsync(user.Id.ToString(), ct);
         var groups = memberships
             .Select(m => new UserGroupDto(m.GroupId, m.MemberId, m.GroupName, m.IsCreator))
             .ToList();
 
-        return new AuthResultDto(user.Id, user.Username, user.DisplayName, user.AvatarColor, user.PhoneNumber, groups);
+        return new AuthResultDto(user.Id, user.Email, user.DisplayName, user.AvatarColor, user.PhoneNumber, groups);
     }
 }

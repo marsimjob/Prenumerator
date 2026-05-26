@@ -10,7 +10,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseSqlServer(
-                "Server=localhost,1433;Database=kompisgaang;User Id=sa;Password=Kompisg@ang123;TrustServerCertificate=True;MultipleActiveResultSets=True")
+                "Server=(localdb)\\mssqllocaldb;Database=kompisgaang;Trusted_Connection=True;")
             .Options;
 
         return new AppDbContext(options);
